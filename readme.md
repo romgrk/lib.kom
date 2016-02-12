@@ -14,6 +14,25 @@ undocumented:
  - buf.vim
  - win.vim
 
+Usage:
+
+```vim
+echo buf#filter('&buflisted') 
+" => List<Number> of listed buffers
+echo win#filter('&buflisted') 
+" => List<Number> of windows containing listed buffers
+
+let window = win#(2)
+" => a Window object (such a loss of time in this nonsense)
+call window.open(4)
+" buffer #4 is opened in window #2
+
+echo color#darken('#599eff', '0.2')
+" => #477ecc
+echo color#HexToRGB('#599eff')
+" => [89, 158, 255]
+```
+
 (if you find this useful, let me know, I might write more documentation)
 
 ### hi.vim - highlighting
@@ -31,7 +50,9 @@ where arguments are assumed to be (in order): gui-foreground-color, gui-backgrou
 
 Useful trick example:
 
-  `<C-r>=hi#fg('Function')<CR>`
+```vim
+<C-r>=hi#fg('Function')<CR>
+```
 
 gives you the foreground color for group Function
 
