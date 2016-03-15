@@ -1,24 +1,25 @@
 " File: win.vim
 " Author: romgrk
 " Description: windows functions
-" Date: 18 Sep 2015
-" ::exe [so % | call s:init()]
+" Date: 15 Mar 2016
+" !::exe [so %]
 
 if exists('did_win_vim')
-    if g:debug | try
-        unlet WindowMap
-        unlet WindowFilters
-    catch /.*/ | endtry
-    else | finish | end | end
+    if get(g:, 'debug', 0)
+        call Warn('Reloading')
+        let g:_win = s:
+        for nr in range(winnr('$'))
+            call win#cmd(nr, ['unlet! w:w_object', 'unlet! w:w_hash'])
+            call win#(nr)
+        endfor
+    else
+        finish | end
+end
 let did_win_vim = 1
 
-"if !exists('s:map') |  | end
-"if !exists('s:filters') " {{{
-"end " }}}
 unlet! s:map
-let s:map = {}
-
 unlet! s:filters
+let s:map = {}
 let s:filters = {
 \ 'listed': "getwinvar(v:val, '&buflisted')",
 \ 'term':   "win#type(v:val) == 'terminal'",
@@ -26,7 +27,7 @@ let s:filters = {
 
 au VimEnter * nested call <SID>init()
 function! s:init ()
-    augroup WindowMap
+    execute 'augroup ' . expand('<sfile')
         au!
         au WinLeave * call <SID>winLeave()
         au WinEnter * call <SID>winEnter()
