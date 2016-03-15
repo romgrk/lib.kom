@@ -1,8 +1,47 @@
+" File: color.vim
+" Author: romgrk
+" Date: 15 Mar 2016
+" Description: vimscript RGB/HSL color parsing
+" This is mostly a transcript from a javascript color parsing module.
+" !::exe [so %]
 
-" where    r,g,b ∈ [0, 255]
+" Example:
+" Lighten/darken the color under the cursor with Alt-minus/Alt-equal
+"
+" nnoremap <expr><M--> color#Test(expand('<cword>'))
+"             \? '"_ciw' . color#darken(expand('<cword>')) . "\<Esc>"
+"             \: "\<Nop>"
+" nnoremap <expr><M-=> color#Test(expand('<cword>'))
+"             \? '"_ciw' . color#lighten(expand('<cword>')) . "\<Esc>"
+"             \: "\<Nop>"
 
-" RGB color format
-let g:hexColorPattern = '\v(\x{2})(\x{2})(\x{2})'
+" Definitions: {{{1
+
+" in function names:
+"  • “Hex” refers to hexadecimal color format e.g. #599eff
+"  • “RGB” refers to an array of numbers [r, g, b]
+"                                      where   r,g,b ∈ [0, 255]
+"  • “HSL” refers to an array of floats  [h, s, l]
+"                                      where   h,s,l ∈ [0, 1.0]
+" color-format patterns:
+let s:patterns = {}
+let s:patterns['hex']      = '\v#?(\x{2})(\x{2})(\x{2})'
+let s:patterns['shortHex'] = '\v#(\x{1})(\x{1})(\x{1})' " short version is more strict: starting # mandatory
+"let s:patterns['rgb']  = '\vrgb\s*\((\d+)\s*,(\d+)\s*,(\d+)\s*)\s*'
+"let s:patterns['rgba'] = '\vrgba\s*\((\d+)\s*,(\d+)\s*,(\d+)\s*,(\d+)\s*)\s*'
+
+" Functions: {{{1
+
+" @params  String       string   The string to test
+" @returns Boolean     [0 or 1]  if string matches: rrggbb OR #rrggbb OR #rgb
+fu! color#Test (string)
+    for key in keys(s:patterns)
+        if a:string =~# s:patterns[key]
+            return 1
+        end
+    endfor
+    return 0
+endfu
 
 " @params (r, g, b)
 " @params ([r, g, b])
@@ -17,12 +56,18 @@ endfu
 
 " @param {String|Number} color   The color to parse
 fu! color#HexToRGB (color)
-    if type(a:color) == type(5)
+    if type(a:color) == 2
         let color = printf('%x', a:color)
     else
         let color = a:color | end
 
-    let matches = matchlist(color, g:hexColorPattern)
+    let matches = matchlist(color, s:patterns['hex'])
+    let factor  = 0x1
+
+    if empty(matches)
+        let matches = matchlist(color, s:patterns['shortHex'])
+        let factor  = 0x10
+    end
 
     if len(matches) < 4
         echohl Error
@@ -30,9 +75,9 @@ fu! color#HexToRGB (color)
         echohl None
         return | end
 
-    let r = str2nr(matches[1], 16)
-    let g = str2nr(matches[2], 16)
-    let b = str2nr(matches[3], 16)
+    let r = str2nr(matches[1], 16) * factor
+    let g = str2nr(matches[2], 16) * factor
+    let b = str2nr(matches[3], 16) * factor
 
     return [r, g, b]
 endfu
@@ -42,16 +87,12 @@ endfu
 " adapted from http://en.wikipedia.org/wiki/HSL_color_space.
 " Assumes h, s, and l are contained in the set [0, 1] and
 " returns r, g, and b in the set [0, 255].
-" @param   Number  h       The hue
-" @param   Number  s       The saturation
-" @param   Number  l       The lightness
-" @returns Array           The RGB representation
+" @param   Number  h     OR     @param  Array [h, s, l]
+" @param   Number  s
+" @param   Number  l
+" @returns Array [r, g, b]     The RGB representation
 fu! color#HSLtoRGB(...) " (h, s, l)
     let [h, s, l] = ( a:0==1 ? a:1 : a:000 )
-
-    let r = str2float(0)
-    let g = str2float(0)
-    let b = str2float(0)
 
     if (s == 0.0) " achromatic
         let r = l
@@ -66,8 +107,13 @@ fu! color#HSLtoRGB(...) " (h, s, l)
     end
 
     return [r * 255.0, g * 255.0, b * 255.0]
-endfunc
+endfu
 
+
+" @param   Number  r     OR     @param  Array [r, g, b]
+" @param   Number  g
+" @param   Number  b
+" @returns Array [h, s, l]     The HSL representation
 fu! color#RGBtoHSL(...)
     let [r, g, b] = ( a:0==1 ? a:1 : a:000 )
     let max = max([r, g, b])
@@ -108,9 +154,9 @@ fu! color#RGBtoHSL(...)
     end
 
     return [h, s, l]
-endfunction
+endfu
 
-func! color#Hue2RGB(...) " (p, q, t)
+fu! color#Hue2RGB(...) " (p, q, t)
     let [p, q, t] = ( a:0==1 ? a:1 : a:000 )
 
     if(t < 0) | let t += 1 | end
@@ -120,9 +166,9 @@ func! color#Hue2RGB(...) " (p, q, t)
     if(t < 1/2) | return (q)                           | end
     if(t < 2/3) | return (p + (q - p) * (2/3 - t) * 6) | end
     return p
-endfunc
+endfu
 
-" Composited functions:
+" Composed functions:
 
 fu! color#HexToHSL (color)
     let [r, g, b] = color#HexToRGB(a:color)
@@ -135,8 +181,13 @@ fu! color#HSLtoHex (...)
     return color#RGBtoHex(r, g, b)
 endfu
 
+" @params String                 color      The color
+" @params {Number|String|Float} [amount=5]  The percentage of light
 fu! color#lighten(color, ...)
-    let amount = a:0 ? str2float(a:1) : 5.0
+    let amount = a:0 ?
+                \(type(a:1) < 2 ?
+                    \str2float(a:1) : a:1 )
+                \: 5.0
 
     if(amount < 1.0)
         let amount = 1.0 + amount
@@ -152,8 +203,13 @@ fu! color#lighten(color, ...)
     return hex
 endfu
 
+" @params String                 color      The color
+" @params {Number|String|Float} [amount=5]  The percentage of darkness
 fu! color#darken(color, ...)
-    let amount = a:0 ? str2float(a:1) : 5.0
+    let amount = a:0 ?
+                \(type(a:1) < 2 ?
+                    \str2float(a:1) : a:1 )
+                \: 5.0
 
     if(amount < 1.0)
         let amount = 1.0 - amount
@@ -172,4 +228,6 @@ fu! color#darken(color, ...)
     let hex = color#RGBtoHex(rgb)
     return hex
 endfu
+
+" }}}
 
