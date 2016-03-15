@@ -12,15 +12,19 @@ if exists('did_win_vim')
     else | finish | end | end
 let did_win_vim = 1
 
-if !exists('g:WindowMap') | let g:WindowMap = {} | end
-if !exists('g:WindowFilters') " {{{
-    let g:WindowFilters = {
-    \ 'listed': "getwinvar(v:val, '&buflisted')",
-    \ 'term':   "win#type(v:val) == 'terminal'",
-    \ }
-end " }}}
+"if !exists('s:map') |  | end
+"if !exists('s:filters') " {{{
+"end " }}}
+unlet! s:map
+let s:map = {}
 
-au VimEnter * nested call <SID>init() " {{{
+unlet! s:filters
+let s:filters = {
+\ 'listed': "getwinvar(v:val, '&buflisted')",
+\ 'term':   "win#type(v:val) == 'terminal'",
+\ }
+
+au VimEnter * nested call <SID>init()
 function! s:init ()
     augroup WindowMap
         au!
@@ -33,7 +37,7 @@ let s:windowCount = 0
 let s:closedWindows = []
 
 function! s:winEnter () " {{{
-    if !exists('w:hash')
+    if !exists('w:w_hash')
         call win#()
         call s:update()
         return
@@ -45,30 +49,30 @@ function! s:winEnter () " {{{
     endif
 endfunc "  }}}
 function! s:winLeave () " {{{
-    "call EchoHL('TextWarning', "LEAVE")
-    let hash = get(w:, 'hash', '')
-    if hash ==# '' | return | endif
-    if !exists('g:WindowMap[l:hash]') | return  | end
-    let win = g:WindowMap[hash]
+    let hash = get(w:, 'w_hash', 0)
+    if !hash | return | endif
+    if !exists('s:map[l:hash]') | return  | end
+    let win = s:map[hash]
     let win.data = {'bufnr': win.bufnr(), 'size':[win.width(), win.height()]}
 endfunc " }}}
 function! s:update (...) " {{{
     try
-        for h in keys(g:WindowMap)
-            let win = g:WindowMap[h]
+        for h in keys(s:map)
+            let win = s:map[h]
             call win.exists()
         endfor
         for winID in range(1, winnr('$'))
-            let hash = getwinvar(winID, 'hash')
+            let hash = getwinvar(winID, 'w_hash')
             if empty(hash)
                 "call EchoHL('TextWarning', 'Window with no hash: ', winID)
+                call win#(winID)
             else
-                let g:WindowMap[hash].winnr = winID | end
+                let s:map[hash].winnr = winID | end
         endfor
-        for h in keys(g:WindowMap)
-            let win = g:WindowMap[h]
+        for h in keys(s:map)
+            let win = s:map[h]
             if win.winnr == -1
-                call remove(g:WindowMap, h)
+                call remove(s:map, h)
                 "call EchoHL('TextInfo', 'remove ', string(win))
             endif
         endfor
@@ -106,21 +110,21 @@ function! win# (...) " {{{
         echo 'Window ' . a:1 . ' doesnt exist.' | end
 
     " Check for Window(winnr) in HashMap
-    let hash = getwinvar(winnr, 'hash')
-    if  hash != '' && exists('g:WindowMap[l:hash]')
-        let win = g:WindowMap[hash]
+    let hash = getwinvar(winnr, 'w_hash')
+    if  hash != '' && exists('s:map[l:hash]')
+        let win = s:map[hash]
         let win.winnr = winnr
         return win
     endif
 
     " Create new object
-    let hash = string(reltime())
-
     let win = win#info(winnr)
     call extend(win, deepcopy(s:Window))
-    let g:WindowMap[hash] = win
-    let win.hash          = hash
-    call win.w('hash', hash)
+    let hash = string(reltime())
+    let s:map[hash] = win
+    let w:w_object  = win
+    let w:w_hash    = hash
+    let win.hash    = hash
 
     return win
 endfunc " }}}
@@ -180,7 +184,7 @@ function! s:Window.cmd (cmd) dict " {{{
 endfunc " }}}
 function! s:Window.exists () dict " {{{
     if self.winnr == -1 | return 0 | endif
-    let ex = (self.hash ==# getwinvar(self.winnr, 'hash'))
+    let ex = (self.hash ==# getwinvar(self.winnr, 'w_hash'))
     if !ex | let self.winnr = -1 | endif
     return ex
 endfunc " }}}
@@ -214,6 +218,9 @@ function! s:Window.open (...) dict " ({Number|String|Buffer}, focus) {{{
     if (a:0 == 2)
         self.focus()
     endif
+endfunction " }}}
+function! s:Window.delete (...) dict " {{{
+
 endfunction " }}}
 
 " Static functions
@@ -251,8 +258,8 @@ endfunc " }}}
 function! win#list (...) " {{{
     let list = range(1, winnr('$'))
     for f in a:000
-        if exists('g:WindowFilters[l:f]')
-            call filter(list, g:WindowFilters[f])
+        if exists('s:filters[l:f]')
+            call filter(list, s:filters[f])
             call map(list, 'win#(v:val)')
         else
             call map(list, 'win#(v:val)')
@@ -262,11 +269,13 @@ function! win#list (...) " {{{
 endfunction " }}}
 function! win#filter (...) " {{{
     let list = range(1, winnr('$'))
-    let expr = a:1
-    let expr = substitute(expr, '&\w\+', 'getwinvar(v:val, "\0")', 'g')
-    if exists('g:WindowFilters[l:expr]')
-        call filter(list, g:WindowFilters[l:expr])  | else
-        call filter(list, expr)                     | end
+    for a_expr in a:000
+        let expr = a_expr
+        let expr = substitute(expr, '&\w\+', 'getwinvar(v:val, "\0")', 'g')
+        if exists('s:filters[l:expr]')
+            call filter(list, s:filters[l:expr])  | else
+            call filter(list, expr)                     | end
+    endfor
     return list
 endfunction " }}}
 function! win#type (...) " {{{
@@ -319,6 +328,8 @@ function! win#split (...) " {{{
 endfunc " }}}
 function! win#cmd (winID, cmd) " {{{
     let saved_window = winnr()
+    let saved_ei = &ei
+    set eventignore=WinEnter,WinLeave
     if type(a:cmd) == 3
         exe a:winID . 'windo ' . a:cmd[0]
         for c in a:cmd[1:]
@@ -328,7 +339,13 @@ function! win#cmd (winID, cmd) " {{{
         exe a:winID . 'windo ' . a:cmd
     end
     exe saved_window . 'wincmd w'
+    let &ei = saved_ei
 endfunc " }}}
+function! win#close (...) " [nr] {{{
+    let winID = (a:0) ? a:1 : winnr()
+    exe winID . 'wincmd c'
+endfunc " }}}
+
 
 " Helpers
 function! s:c (...) " {{{
