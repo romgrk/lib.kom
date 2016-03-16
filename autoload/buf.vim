@@ -115,7 +115,7 @@ fu! buf#type (ref) " {{{
     return getbufvar(a:ref, '&buftype')
 endfu " }}}
 fu! buf#modL (ref) " {{{
-    return getbufvar(a:ref, '&modifiabe')
+    return getbufvar(a:ref, '&modifiable')
 endfu " }}}
 fu! buf#modF (ref) " {{{
     return getbufvar(a:ref, '&modified')
