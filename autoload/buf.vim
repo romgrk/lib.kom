@@ -4,7 +4,7 @@
 " Date: 10 Sep 2015
 " !::exe [so %]
 
-if !exists('g:BufferMap') | let g:BufferMap = {} | end
+if !exists('s:map') | let s:map = {} | end
 if !exists('g:BufferFilters') " {{{
     let g:BufferFilters = {
     \ 'listed': "v:val.listed()  == 1",
@@ -21,16 +21,17 @@ augroup END
 " Buffer class
 fu! buf# (...) " {{{
     let num = s:num(a:000)
-    if !bufexists(num)
-        throw 'Buffer ' . num . ' does not exist.' | end
 
-    if exists('g:BufferMap[l:num]')
-        return g:BufferMap[num] | end
+    if !bufexists(num)
+        echoerr 'Buffer ' . num . ' does not exist; ' . string(a:000) | end
+
+    if exists('s:map[l:num]')
+        return s:map[num] | end
 
     let buffer = {}
     let buffer.nr = num
     call extend(buffer, deepcopy(s:Buffer))
-    let g:BufferMap[num] = buffer
+    let s:map[num] = buffer
     return buffer
 endfu " }}}
 
@@ -76,7 +77,7 @@ endfu " }}}
 fun! s:Buffer.win () dict " []: window displaying buffer {{{
     if bufwinnr(self.nr) != -1
         return win#(bufwinnr(self.nr))
-    endif
+    end
 endfu " }}}
 fun! s:Buffer.ext () dict " {{{
     return buf#ext(self.nr)
@@ -103,6 +104,21 @@ fu! s:Buffer.open (...) dict " {{{
         call win.display(self.nr)
         "call win.focus()
     end
+    return self
+endfu " }}}
+fu! s:Buffer.close (...) dict " {{{
+    for winnr in self.winnr()
+        let win = win#(winnr)
+        call win.cmd('bnext')
+        if (win.bufnr() == self.nr)
+            call win.cmd('enew')
+        end
+    end
+    call buf#delete(self.nr)
+    return self
+endfu " }}}
+fu! s:Buffer.delete (...) dict " {{{
+    call buf#delete(self.nr, get(a:, 1, 0) )
     return self
 endfu " }}}
 
@@ -279,6 +295,11 @@ endfu " }}}
 
 " Buffer manipulation
 
+fu! buf#delete (...) " (ref, bang) {{{
+    let nr = s:num(a:000)
+    let bang = (a:0 > 1 && a:2) ? '!' : ''
+    execute nr . 'bdelete' . bang
+endfu " }}}
 fu! buf#cmd (...) " {{{
     let num  = s:num(a:000)
     let saved_buffer = bufnr('%')
@@ -293,6 +314,10 @@ fu! buf#cmd (...) " {{{
 endfu " }}}
 
 " Helpers
+
+fu! buf#scope ()
+    return s:
+endfu
 
 " @returns the bufnr() from whatever data is fed to
 "          it as parameter

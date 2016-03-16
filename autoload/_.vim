@@ -11,22 +11,22 @@ let s:types[5] = 'Float'
 " each call
 func! _#each (iterable, Fn)
     if _#isDict(a:iterable)
-        let keys = keys(a:iterable)
+        for key in keys(a:iterable)
+            let val = get(a:iterable, key)
+            call call(a:Fn, [key, val], a:iterable)
+            unlet! val
+        endfor
     else
-        let keys = range(len(a:iterable))
+        for key in range(len(a:iterable))
+            let val = get(a:iterable, key)
+            call call(a:Fn, [val])
+            unlet! val
+        endfor
     end
-
-    "let cmd = substitute(a:Fn, 'v:\(val\|key\)', 'l:\1', 'g')
-
-    for key in keys
-        let val = get(a:iterable, key)
-        call call(a:Fn, [key, val], a:iterable)
-        unlet! val
-    endfor
 endfu
 
 " each execute
-func! _#eachx (iterable, command)
+fu! _#eachx (iterable, command)
     if _#isDict(a:iterable)
         let keys = keys(a:iterable)
     else

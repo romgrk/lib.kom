@@ -1,16 +1,27 @@
 
 ## lib.kom
-> scripting tools
+> advanced scripting tools
 
 Scripting functions for syntax highlighthing and buffer/window management.
 Also comes with `_.vim`, wich is the start of a kind-of adaptation of
 `lodash`/`underscore` to `vimL`, that I will hopefully never have to complete.
 
-Example: exchange buffers between current window and second window
+Quick examples:
 ```vim
+" Exchange current window's buffer with second window's buffer
 let other = win#(2).buf()
 call win#(2).open(buf#())
 call win#().open(other)
+
+" (fake)Delete all non-vimscript buffers
+let buffersList = buf#filter('&ft!="vim" && bufloaded(v:val)')
+let deleteCmd   = 'echo v:key . ": execute ".v:val."bdelete"'
+call _#eachx(buffersList, deleteCmd)
+" _#eachx(  List|Dict,  String command ) aka each_execute
+
+" (real)Delete all non-vimscript buffers
+call _#each(buf#filter('&ft!="vim" && bufloaded(v:val)'), 'buf#delete')
+" _#each(  List|Dict,  Funcref|String Fn )
 ```
 
 ## Buffer/window static functions
