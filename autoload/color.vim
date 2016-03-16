@@ -9,10 +9,10 @@
 " Lighten/darken the color under the cursor with Alt-minus/Alt-equal
 "
 " nnoremap <expr><M--> color#Test(expand('<cword>'))
-"             \? '"_ciw' . color#darken(expand('<cword>')) . "\<Esc>"
+"             \? '"_ciw' . color#Darken(expand('<cword>')) . "\<Esc>"
 "             \: "\<Nop>"
 " nnoremap <expr><M-=> color#Test(expand('<cword>'))
-"             \? '"_ciw' . color#lighten(expand('<cword>')) . "\<Esc>"
+"             \? '"_ciw' . color#Lighten(expand('<cword>')) . "\<Esc>"
 "             \: "\<Nop>"
 
 " Definitions: {{{1
@@ -183,7 +183,7 @@ endfu
 
 " @params String                 color      The color
 " @params {Number|String|Float} [amount=5]  The percentage of light
-fu! color#lighten(color, ...)
+fu! color#Lighten(color, ...)
     let amount = a:0 ?
                 \(type(a:1) < 2 ?
                     \str2float(a:1) : a:1 )
@@ -205,7 +205,7 @@ endfu
 
 " @params String                 color      The color
 " @params {Number|String|Float} [amount=5]  The percentage of darkness
-fu! color#darken(color, ...)
+fu! color#Darken(color, ...)
     let amount = a:0 ?
                 \(type(a:1) < 2 ?
                     \str2float(a:1) : a:1 )
