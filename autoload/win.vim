@@ -107,31 +107,37 @@ function! win# (...) " {{{
     else
         let winnr = a:1
     end
+
     if winnr > winnr('$') || winnr <= 0
-        echo 'Window ' . a:1 . ' doesnt exist.' | end
+        echohl ErrorMsg
+        echo 'Window ' . winnr . ' doesnt exist'
+        echohl None
+        return
+    end
 
     " Check for Window(winnr) in HashMap
     let hash = getwinvar(winnr, 'w_hash')
     if  hash != '' && exists('s:map[l:hash]')
         let win = s:map[hash]
+        let win.nr = winnr
         let win.winnr = winnr
         return win
     endif
 
     " Create new object
-    let win = win#info(winnr)
-    call extend(win, deepcopy(s:Window))
-    let hash = string(reltime())
-    let s:map[hash] = win
-    let w:w_object  = win
-    let w:w_hash    = hash
-    let win.hash    = hash
-
-    return win
+    return s:newWindow(winnr)
 endfunc " }}}
 
-"function! s:Window. (...) dict " {{{
-"endfunction " }}}
+function! s:newWindow (nr) " {{{
+    let w_object = win#info(a:nr)
+    call extend(w_object, deepcopy(s:Window))
+    let hash = string(reltime())
+    let s:map[hash]   = w_object
+    let w:w_object    = w_object
+    let w:w_hash      = hash
+    let w_object.hash = hash
+    return w_object
+endfunction " }}}
 function! s:Window.b (...) dict " {{{
     if a:0==1 | return getbufvar(winbufnr(self.winnr), a:1)
     else    | call setbufvar(winbufnr(self.winnr), a:1, a:2) | end
@@ -195,33 +201,33 @@ endfunc " }}}
 function! s:Window.focus () dict " {{{
     execute self.winnr . 'wincmd w'
 endfunc " }}}
-function! s:Window.blur (...) dict " {{{
+function! s:Window.blur () dict " {{{
     if self.hasFocus()
-        if (a:0 == 0)
-            execute 'wincmd p'
-        elseif type(a:1) == 0
-            execute a:1 . 'wincmd w'
-        else
-            execute a:1
-        end
-    endif
+        wincmd p
+        if self.hasFocus()
+            wincmd w | end
+    end
 endfunc " }}}
-function! s:Window.open (...) dict " ({Number|String|Buffer}, focus) {{{
-    if type(a:1) == 0
-        call win#cmd(self.winnr, 'b' . a:1)
-    elseif type(a:1) == 1
-        call win#cmd(self.winnr, 'b' . bufnr(a:1))
-    elseif type(a:1) == 3
-        call win#cmd(self.winnr, c)
-    elseif type(a:1) == 4
-        call win#cmd(self.winnr, 'b' . a:1['nr'])
-    endif
-    if (a:0 == 2)
-        self.focus()
+function! s:Window.display (...) dict " ({Number|String|Buffer}, focus) {{{
+    call call(self.open, a:000, self)
+endfunc " }}}
+function! s:Window.open (buf, ...) dict " ({Number|String|Buffer}, focus) {{{
+    if type(a:buf) == 0
+        call win#cmd(self.winnr, 'b' . a:buf)
+    elseif type(a:buf) == 1
+        call win#cmd(self.winnr, 'b' . bufnr(a:buf))
+    elseif type(a:buf) == 3
+        throw "win.open: called with list: ". string(a:buf)
+        "call win#cmd(self.winnr, )
+    elseif type(a:buf) == 4
+        call win#cmd(self.winnr, 'b' . a:buf['nr'])
+    end
+    if get(a:, 2, 0)
+        call self.focus()
     endif
 endfunction " }}}
-function! s:Window.delete (...) dict " {{{
-
+function! s:Window.close (...) dict " {{{
+    call win#close(self.nr)
 endfunction " }}}
 
 " Static functions
@@ -230,7 +236,7 @@ function! win#first (...) " {{{
     let args = (type(a:1) == 3) ? a:1 : a:000
     return s:f(fun, args)
 endfunc " }}}
-function! win#sort (forward, ...) " {{{
+function! win#sort (compare, ...) " {{{
     let fun  = (type(a:1) == 3) ? 'win#list' : 'win#filter'
     let args = (type(a:1) == 3) ? a:1 : a:000
     if type(args[0])==0
@@ -244,7 +250,7 @@ function! win#sort (forward, ...) " {{{
         call map(list, 'v:val.winnr') | end
     let first = list[0]
     if len(list)==1 | return first | end
-    call filter(list, a:forward . current)
+    call filter(list, a:compare . current)
     if empty(list)
         return first
     else
@@ -290,7 +296,7 @@ endfu
 function! win#info (...) " {{{
     let winID = (a:0) ? a:1 : winnr()
     let bufnr = winbufnr(winID)
-    return {'winnr': winID, 'bufnr': bufnr,
+    return {'nr': winID, 'winnr': winID, 'bufnr': bufnr,
     \ 'height': winheight(winID),
     \ 'width': winwidth(winID),
     \ 'listed': buflisted(bufnr),
@@ -327,18 +333,14 @@ function! win#split (...) " {{{
     call s:update()
     return win
 endfunc " }}}
-function! win#cmd (winID, cmd) " {{{
+function! win#cmd (winID, ...) " {{{
     let saved_window = winnr()
     let saved_ei = &ei
-    set eventignore=WinEnter,WinLeave
-    if type(a:cmd) == 3
-        exe a:winID . 'windo ' . a:cmd[0]
-        for c in a:cmd[1:]
-            exe c
-        endfor
-    else
-        exe a:winID . 'windo ' . a:cmd
-    end
+    "set eventignore=WinEnter,WinLeave
+    set eventignore=all
+    for cmd in a:000
+        exe a:winID . 'windo ' . cmd
+    endfor
     exe saved_window . 'wincmd w'
     let &ei = saved_ei
 endfunc " }}}

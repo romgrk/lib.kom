@@ -1,4 +1,4 @@
-
+" !::exe [so %]
 
 let s:types = [0, 1, 2, 3, 4, 5]
 let s:types[0] = 'Number'
@@ -8,18 +8,43 @@ let s:types[3] = 'List'
 let s:types[4] = 'Dict'
 let s:types[5] = 'Float'
 
-func! _#each (list, Fn)
-    let cmd = ''
-    if _#isFunc(a:Fn)
-        let cmd = 'call a:Fn(l:val)'
+" each call
+func! _#each (iterable, Fn)
+    if _#isDict(a:iterable)
+        let keys = keys(a:iterable)
     else
-        let cmd = substitute(a:Fn, 'v:val', 'l:val', '')
+        let keys = range(len(a:iterable))
     end
-    for val in a:list
-        execute cmd
+
+    "let cmd = substitute(a:Fn, 'v:\(val\|key\)', 'l:\1', 'g')
+
+    for key in keys
+        let val = get(a:iterable, key)
+        call call(a:Fn, [key, val], a:iterable)
+        unlet! val
     endfor
 endfu
-func! _#times (count, Fn)
+
+" each execute
+func! _#eachx (iterable, command)
+    if _#isDict(a:iterable)
+        let keys = keys(a:iterable)
+    else
+        let keys = range(len(a:iterable))
+    end
+
+    let command = substitute(a:command, 'v:\(val\|key\)', 'l:\1', 'g')
+
+    for key in keys
+        let val = get(a:iterable, key)
+        "let g:res .= string([command, key, val]) . "\n"
+        "call call(a:Fn, [key, val], a:iterable)
+        execute command
+        unlet! val
+    endfor
+endfu
+
+func! _#times (count, Fn) abort
     for idx in range(a:count)
         if _#isFunc(a:Fn)
             call a:Fn()
@@ -35,6 +60,7 @@ endfu
 fu! _#typeof (obj)
     return s:types[type(a:obj)]
 endfu
+
 fu! _#isNumber (arg)
     return (type(a:arg)==0)
 endfu
@@ -48,6 +74,9 @@ fu! _#isList (arg)
     return (type(a:arg)==3)
 endfu
 fu! _#isDict (arg)
+    return (type(a:arg)==4)
+endfu
+fu! _#isObject (arg) " alias
     return (type(a:arg)==4)
 endfu
 fu! _#isFloat (arg)

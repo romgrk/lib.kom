@@ -36,8 +36,9 @@ endfu " }}}
 
 let s:Buffer = {}
 fun! s:Buffer._ (...) dict " {{{
-    if (a:0 == 1) | return getbufvar(self.nr, a:1)
-    else          | call setbufvar(self.nr, a:1, a:2) | endif
+    if (a:0 == 1)
+        call getbufvar(self.nr, a:1)
+    else | call setbufvar(self.nr, a:1, a:2) | endif
 endfu " }}}
 fun! s:Buffer.name (...) dict " {{{
     if (a:0 == 0) | return bufname(self.nr)
@@ -94,15 +95,14 @@ fun! s:Buffer.isfile () dict " {{{
 endfu " }}}
 
 fu! s:Buffer.cmd (...) dict " {{{
-    let args = type(a:1)==3 ? a:1 : a:000
-    return buf#cmd(self.nr, args)
+    return buf#cmd(self.nr, a:000)
 endfu " }}}
 fu! s:Buffer.open (...) dict " {{{
-    let winnr = empty(a:0) ? winnr() : a:000
-
-    let win = win#(winnr)
-    call win.open(self.nr)
-    "call win.focus()
+    let win = win#( (a:0 == 0) ? a:1 : 0 )
+    if (win.exists())
+        call win.display(self.nr)
+        "call win.focus()
+    end
     return self
 endfu " }}}
 
@@ -209,12 +209,12 @@ fu! buf#first (...) " {{{
     return -1
 endfu " }}}
 fu! buf#previous (...) " {{{
-    return s:c('buf#sort', ['v:val < '] + a:000)
+    return call('buf#sort', ['v:val < '] + a:000)
 endfu " }}}
 fu! buf#next (...) " {{{
-    return s:c('buf#sort', ['v:val > '] + a:000)
+    return call('buf#sort', ['v:val > '] + a:000)
 endfu " }}}
-fu! buf#sort (forward, ...) " {{{
+fu! buf#sort (sortExpr, ...) " {{{
     let fun  = (type(a:1) == 3) ? 'buf#list' : 'buf#filter'
     let args = (type(a:1) == 3) ? a:1 : a:000
     if type(args[0])==0
@@ -222,13 +222,13 @@ fu! buf#sort (forward, ...) " {{{
         let args    = args[1:]
     else
         let current = bufnr('%') | end
-    let list = s:c(fun, args)
+    let list = call(fun, args)
     if empty(list)  | return -1 | end
     if fun ==# 'buf#list'
         call map(list, 'v:val.nr') | end
     let first = list[0]
     if len(list)==1 | return first | end
-    call filter(list, a:forward . current)
+    call filter(list, a:sortExpr . current)
     if empty(list)
         return first
     else
@@ -254,9 +254,11 @@ fu! buf#filter (...) " {{{
     for line in split(buf#ls_dump(1), "\n")
         call add(list, 0+matchstr(line, '\v\d+'))
     endfor
-    let expr = a:1
-    let expr = substitute(expr, '&\w\+', 'getbufvar(v:val, "\0")', 'g')
-    call filter(list, expr)
+    for a_expr in a:000
+        let expr = a_expr
+        let expr = substitute(expr, '&\w\+', 'getbufvar(v:val, "\0")', 'g')
+        call filter(list, expr)
+    endfor
     return list
 endfu " }}}
 fu! buf#files ()  " buffer numbers, for listed files {{{
@@ -292,13 +294,25 @@ endfu " }}}
 
 " Helpers
 
+" @returns the bufnr() from whatever data is fed to
+"          it as parameter
 func! s:num (a) " {{{
     if !len(a:a) | return bufnr('%')
     else         | let ref=a:a[0]             | end
     if ref==''   | throw 'Err: empty bufname' | end
-    return type(ref) ? bufnr(ref) : ref
+
+    if !type(ref)
+        return  ref
+    end
+
+    if (ref =~# '^w\d\+$')
+        return winbufnr(ref[1:])
+    end
+
+    return bufnr(ref)
 endfunc " }}}
 
+" call a:1 with (a:2 as arglist if present, [] otherwise)
 fu! s:c (...) " {{{
     if (a:0==1) | return call(a:1, [])
     else        | return call(a:1, a:2) | end

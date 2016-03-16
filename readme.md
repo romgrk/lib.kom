@@ -9,7 +9,7 @@ Also comes with `_.vim`, wich is the start of a kind-of adaptation of
 Example: exchange buffers between current window and second window
 ```vim
 let other = win#(2).buf()
-call win#(2).open(buf#("%"))
+call win#(2).open(buf#())
 call win#().open(other)
 ```
 
@@ -26,7 +26,7 @@ Examples:
 echo buf#filter('&buflisted', '&ft=="vim"', 'v:val > 10')
 " => [11, 20, 21]
 
-" Print windows that contain a listed and modified buffer
+" Print windows that contain a modified buffer
 echo win#filter('&modified')
 " => [1, 3]
 ```
@@ -80,12 +80,13 @@ if (!win#(1).hasFocus())
     call win#(1).focus()
 else
     call win#(1).blur()
+    " blur() attempts <C-W><C-P> first, <C-W>w second
 end
 ```
 
 `win#().cmd()`:
 ```vim
-call win#(2).cmd()
+call win#(3).cmd('bprevious')
 ```
 
 ## Color

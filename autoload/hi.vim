@@ -111,6 +111,17 @@ fu! hi#set (name, ...)
     return [fg, bg, attr, id, name]
 endfu
 
+fu! hi#link (from, to)
+    if !hi#exists(a:to)
+        call hi#(a:to, '')
+    end
+    execute 'hi! link ' . a:from . ' ' . a:to
+endfu
+
+fu! hi#alias (name, as)
+    call hi#link(a:as, a:name)
+endfu
+
 " Returns:
 "     0 -> doesnt exist
 "     1 -> linked
