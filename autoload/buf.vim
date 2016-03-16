@@ -296,21 +296,23 @@ endfu " }}}
 
 " @returns the bufnr() from whatever data is fed to
 "          it as parameter
-func! s:num (a) " {{{
-    if !len(a:a) | return bufnr('%')
-    else         | let ref=a:a[0]             | end
-    if ref==''   | throw 'Err: empty bufname' | end
+func! s:num (arr) " {{{
+    if empty(a:arr) || empty(a:arr[0])
+        return bufnr('%') | end
 
-    if !type(ref)
-        return  ref
+    let ref = a:arr[0]
+    let ref_t = type(ref)
+    if _#isNumber(ref)
+        return ref
+    elseif _#isObject(ref)
+        return ref['bufnr']()
+    elseif _#isString(ref)
+        return (ref =~# '^w\d\+$')
+                    \? winbufnr(ref[1:])
+                    \: ref
     end
-
-    if (ref =~# '^w\d\+$')
-        return winbufnr(ref[1:])
-    end
-
     return bufnr(ref)
-endfunc " }}}
+endfu " }}}
 
 " call a:1 with (a:2 as arglist if present, [] otherwise)
 fu! s:c (...) " {{{

@@ -58,7 +58,8 @@ let secondWindowBuffer = buf#('w2')
 " buf#('w2')       == win#(2).buf()
 " buf#('w2').win() == win#(2)
 
-let curbuf = buf#()
+" buf#() == buf#('%') == buf#(0)
+" win#() == win#('%') == win#(0)
 ```
 `winnr()`s always keep updated to go like 1,2,3,etc. which means that
 if you close window #1, then window #2 becomes window #1.
