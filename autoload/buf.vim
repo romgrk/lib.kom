@@ -36,6 +36,9 @@ fu! buf# (...) " {{{
 endfu " }}}
 
 let s:Buffer = {}
+fun! s:Buffer.new () dict " {{{
+    return copy(self)
+endfu " }}}
 fun! s:Buffer._ (...) dict " {{{
     if (a:0 == 1)
         call getbufvar(self.nr, a:1)
@@ -334,7 +337,7 @@ func! s:num (arr) " {{{
     elseif _#isString(ref)
         return (ref =~# '^w\d\+$')
                     \? winbufnr(ref[1:])
-                    \: ref
+                    \: bufnr(ref)
     end
     return bufnr(ref)
 endfu " }}}
