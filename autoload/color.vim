@@ -250,5 +250,12 @@ fu! color#Darken(color, ...)
     return hex
 endfu
 
+fu! color#darken(color, ...)
+    return call('color#Darken', [a:color] + a:000)
+endfu
+fu! color#lighten(color, ...)
+    return call('color#Lighten', [a:color] + a:000)
+endfu
+
 " }}}1
 
