@@ -7,30 +7,47 @@
 
 " Example:
 " Lighten/darken the color under the cursor with Alt-minus/Alt-equal
-"
-" nnoremap <expr><M--> color#Test(expand('<cword>'))
-"             \? '"_ciw' . color#Darken(expand('<cword>')) . "\<Esc>"
-"             \: "\<Nop>"
-" nnoremap <expr><M-=> color#Test(expand('<cword>'))
-"             \? '"_ciw' . color#Lighten(expand('<cword>')) . "\<Esc>"
-"             \: "\<Nop>"
 
+nnoremap <expr><M--> color#Test(expand('<cword>'))
+            \? '"_ciw' . color#Darken(expand('<cword>')) . "\<Esc>"
+            \: "\<Nop>"
+nnoremap <expr><M-=> color#Test(expand('<cword>'))
+            \? '"_ciw' . color#Lighten(expand('<cword>')) . "\<Esc>"
+            \: "\<Nop>"
+" #00f6ff
+" #00a7cd
+" #007691
+
+
+" ================================================================================
 " Definitions: {{{1
-
-" in function names:
+" In function names:
 "  • “Hex” refers to hexadecimal color format e.g. #599eff
 "  • “RGB” refers to an array of numbers [r, g, b]
 "                                      where   r,g,b ∈ [0, 255]
 "  • “HSL” refers to an array of floats  [h, s, l]
 "                                      where   h,s,l ∈ [0, 1.0]
-" color-format patterns:
+" }}}1
+" ================================================================================
+" Color-format patterns:
+" {{{1
+
 let s:patterns = {}
+
+" 6 hex-numbers, optionnal #-prefix
 let s:patterns['hex']      = '\v#?(\x{2})(\x{2})(\x{2})'
-let s:patterns['shortHex'] = '\v#(\x{1})(\x{1})(\x{1})' " short version is more strict: starting # mandatory
+
+" short version is strict: starting # mandatory
+let s:patterns['shortHex'] = '\v#(\x{1})(\x{1})(\x{1})'
+
+" Disabled
 "let s:patterns['rgb']  = '\vrgb\s*\((\d+)\s*,(\d+)\s*,(\d+)\s*)\s*'
 "let s:patterns['rgba'] = '\vrgba\s*\((\d+)\s*,(\d+)\s*,(\d+)\s*,(\d+)\s*)\s*'
 
-" Functions: {{{1
+" }}}1
+" ================================================================================
+" Functions:
+" {{{1
 
 " @params  String       string   The string to test
 " @returns Boolean     [0 or 1]  if string matches: rrggbb OR #rrggbb OR #rgb
@@ -162,13 +179,17 @@ fu! color#Hue2RGB(...) " (p, q, t)
     if(t < 0) | let t += 1 | end
     if(t > 1) | let t -= 1 | end
 
-    if(t < 1/6) | return (p + (q - p) * 6 * t)         | end
-    if(t < 1/2) | return (q)                           | end
-    if(t < 2/3) | return (p + (q - p) * (2/3 - t) * 6) | end
+    if(t < 1.0/6) | return (p + (q - p) * 6.0 * t)           | end
+    if(t < 1.0/2) | return (q)                               | end
+    if(t < 2.0/3) | return (p + (q - p) * (2.0/3 - t) * 6.0) | end
+
     return p
 endfu
 
+" }}}1
+" ================================================================================
 " Composed functions:
+" {{{1
 
 fu! color#HexToHSL (color)
     let [r, g, b] = color#HexToRGB(a:color)
@@ -229,5 +250,5 @@ fu! color#Darken(color, ...)
     return hex
 endfu
 
-" }}}
+" }}}1
 

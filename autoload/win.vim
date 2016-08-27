@@ -83,7 +83,7 @@ function! s:update (...) " {{{
 endfunc " }}}
 
 " class Window
-" (), ('.'), ('%')   => current window
+" (), (0), ('.'), ('%') => current window
 " ('$')              => last window                 ('#')      => previous window
 " ({Number})         => window {Number}             ('b' . nr) => window for buffer {nr}
 let s:Window = {}
