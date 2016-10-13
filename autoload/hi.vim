@@ -260,7 +260,7 @@ function! hi#set (name, ...)
     let attr  = get(group, 2, '')
     let sp    = get(group, 3, '')
 
-    let cmd = 'hi ' . name .
+    let cmd = 'hi! ' . name .
         \ (len(fg)    ? ' guifg=' . fg   : '') .
         \ (len(bg)    ? ' guibg=' . bg   : '') .
         \ (len(sp)    ? ' guisp=' . sp   : '') .
@@ -268,10 +268,8 @@ function! hi#set (name, ...)
 
     try | silent exe cmd
     catch /.*/
-        echoerr v:exception
-        echoerr name . ' ' . group
-        echoerr cmd
-        return | endtry
+        return []
+    endtry
 
     let id = hlID(name)
     return [fg, bg, attr, id, name]
