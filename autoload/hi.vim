@@ -372,7 +372,8 @@ function! hi#group (...)
           \ get(ref,  1,  ''),
           \ get(ref,  2,  ''),
           \ get(ref,  3,  ''),
-          \ get(ref,  4,  ''),  ]
+          \ get(ref,  4,  ''),
+          \ v:null ]
     elseif typ == 'Dict'
         return [
           \ get(ref,  'fg',    ''),
@@ -424,18 +425,23 @@ endfu
 
 function! hi#compose (rule, ...)
     let r = a:rule
-    if r == 'fg'       | let [fg, _,     _, _, _] = hi#group(a:1)
-                         let [_,  bg, attr, _, _] = hi#group()
+    let fg = v:null
+    let bg = v:null
+    let attr = v:null
+    if r == 'fg'       | let [fg, _,     _, _, _, _] = hi#group(a:1)
+                         let [_,  bg, attr, _, _, _] = hi#group()
     elseif r == 'inv' || r == 'inverse'
-                         let [bg, fg, attr, _, _] = hi#group(a:1)
-    elseif r == 'fgbg' | let [fg, _,  attr, _, _] = hi#group(a:1)
-                         let [_,  bg, _,    _, _] = hi#group(a:2)
-    elseif r == 'fgfg' | let [fg, _,  attr, _, _] = hi#group(a:1)
-                         let [bg, _,  _,    _, _] = hi#group(a:2)
-    elseif r == 'bgfg' | let [_,  bg, _,    _, _] = hi#group(a:1)
-                         let [fg, _,  attr, _, _] = hi#group(a:2)
-    elseif r == 'bgbg' | let [_,  fg, _,    _, _] = hi#group(a:1)
-                         let [_,  bg, attr, _, _] = hi#group(a:2)
+                         let [bg, fg, attr, _, _, _] = hi#group(a:1)
+    elseif r == 'fgbg' | let [fg, _,  attr, _, _, _] = hi#group(a:1)
+                         let [_,  bg, _,    _, _, _] = hi#group(a:2)
+    elseif r == 'fgfg' | let [fg, _,  attr, _, _, _] = hi#group(a:1)
+                         let [bg, _,  _,    _, _, _] = hi#group(a:2)
+    elseif r == 'bgfg' | let [_,  bg, _,    _, _, _] = hi#group(a:1)
+                         let [fg, _,  attr, _, _, _] = hi#group(a:2)
+    elseif r == 'bgbg' | let [_,  fg, _,    _, _, _] = hi#group(a:1)
+                         let [_,  bg, attr, _, _, _] = hi#group(a:2)
+    elseif r == 'stl'  | let [_,  fg, _,    _, _, _] = hi#group(a:1)
+                         let [_,  bg, attr, _, _, _] = hi#group(a:2)
     else               | return 0                 | end
 
     let group = [ fg, bg, attr, '']
