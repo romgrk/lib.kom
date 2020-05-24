@@ -87,10 +87,8 @@ fu! color#HexToRGB (color)
     end
 
     if len(matches) < 4
-        echohl Error
-        echom 'Couldnt parse ' . string(color) . ' ' .  string(matches)
-        echohl None
-        return | end
+        throw 'Couldnt parse ' . string(color) . ' ' .  string(matches)
+    end
 
     let r = str2nr(matches[1], 16) * factor
     let g = str2nr(matches[2], 16) * factor
