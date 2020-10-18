@@ -8,12 +8,13 @@
 " Example:
 " Lighten/darken the color under the cursor with Alt-minus/Alt-equal
 
-nnoremap <expr><M--> color#Test(expand('<cword>'))
-            \? '"_ciw' . color#Darken(expand('<cword>')) . "\<Esc>"
-            \: "\<Nop>"
-nnoremap <expr><M-=> color#Test(expand('<cword>'))
-            \? '"_ciw' . color#Lighten(expand('<cword>')) . "\<Esc>"
-            \: "\<Nop>"
+" nnoremap <expr><M--> color#Test(expand('<cword>'))
+            " \? '"_ciw' . color#Darken(expand('<cword>')) . "\<Esc>"
+            " \: "\<Nop>"
+" nnoremap <expr><M-=> color#Test(expand('<cword>'))
+            " \? '"_ciw' . color#Lighten(expand('<cword>')) . "\<Esc>"
+            " \: "\<Nop>"
+
 " #00f6ff
 " #00a7cd
 " #007691
@@ -248,12 +249,23 @@ fu! color#Darken(color, ...)
     return hex
 endfu
 
-fu! color#darken(color, ...)
-    return call('color#Darken', [a:color] + a:000)
-endfu
-fu! color#lighten(color, ...)
-    return call('color#Lighten', [a:color] + a:000)
-endfu
+function! color#Mix (a, b, ...)
+    let amount = a:0 ? a:1 : 0.5
+
+    let ca = color#HexToRGB(a:a)
+    let cb = color#HexToRGB(a:b)
+
+    let r = s:interpolate(ca[0], cb[0], amount)
+    let g = s:interpolate(ca[1], cb[1], amount)
+    let b = s:interpolate(ca[2], cb[2], amount)
+
+    return color#RGBtoHex([r, g, b])
+endfunc
+
+function! s:interpolate (start, end, amount)
+    let diff = a:end - a:start
+    return a:start + (diff * a:amount)
+endfunc
 
 " }}}1
 
