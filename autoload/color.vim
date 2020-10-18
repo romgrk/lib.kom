@@ -249,6 +249,20 @@ fu! color#Darken(color, ...)
     return hex
 endfu
 
+function! color#Decrease (...)
+    if &background == 'light'
+        return call(function('color#Lighten'), a:000)
+    end
+    return call(function('color#Darken'), a:000)
+endfunc
+
+function! color#Increase (...)
+    if &background == 'light'
+        return call(function('color#Darken'), a:000)
+    end
+    return call(function('color#Lighten'), a:000)
+endfunc
+
 function! color#Mix (a, b, ...)
     let amount = a:0 ? a:1 : 0.5
 
