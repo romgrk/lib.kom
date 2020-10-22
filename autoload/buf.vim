@@ -133,13 +133,13 @@ endfu " }}}
 fu! buf#type (ref) " {{{
     return getbufvar(a:ref, '&buftype')
 endfu " }}}
-fu! buf#modL (ref) " {{{
+fu! buf#modifiable (ref) " {{{
     return getbufvar(a:ref, '&modifiable')
 endfu " }}}
-fu! buf#modF (ref) " {{{
+fu! buf#modified (ref) " {{{
     return getbufvar(a:ref, '&modified')
 endfu " }}}
-fu! buf#listD (ref) " {{{
+fu! buf#listed (ref) " {{{
     return getbufvar(a:ref, '&buflisted')
 endfu " }}}
 fu! buf#visible (ref) " {{{
@@ -202,7 +202,7 @@ endfu " }}}
 fu! buf#isfile (...) " {{{
     let num = s:num(a:000)
     if !bufexists(num)  | return 0 | end
-    if !buf#modL(num)   | return 0 | end
+    if !buf#modifiable(num)   | return 0 | end
     if buf#ispanel(num) | return 0 | end
     "if !getbufvar(a:ref, '&buflisted') | return 0 | end
     return 1
@@ -286,7 +286,7 @@ fu! buf#files ()  " buffer numbers, for listed files {{{
         call add(list, (0+matchstr(line, '\v\d+')))
     endfor
     call filter(list, 'v:val!=0')
-    call filter(list, 'buf#modL(v:val)')
+    call filter(list, 'buf#modifiable(v:val)')
     call filter(list, '!buf#ispanel(v:val)')
     return list
 endfunc " }}}
